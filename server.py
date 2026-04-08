@@ -256,37 +256,53 @@ def get_website_news(modality: str):
 
 
 # ─── API: PREPRINTS (preprint-dashboard) ─────────────────────────────────────
-
 @app.get("/api/modality/{modality}/preprints")
 def get_preprints(modality: str):
     if modality not in MODALITIES:
         raise HTTPException(404, "Unknown modality")
 
-    url, date = get_latest_preprint_url()
-    if not url:
-        return {"modality": modality, "items": [], "date": None}
+    today = datetime.today().date()
 
-    raw = fetch_json(url)
-    if not raw:
-        return {"modality": modality, "items": [], "date": date}
+    # 🔥 SEARCH ACROSS LAST 14 DAYS FOR THIS MODALITY
+    for i in range(14):
+        d = today - timedelta(days=i)
+        url = f"{PREPRINT_BASE}/ranked_results_{d.isoformat()}.json"
 
-    articles = raw.get(modality, [])
-    items = []
-    for a in articles:
-        kws = a.get("primary_abstract_matched_keywords", [])
-        if isinstance(kws, str):
-            try: kws = json.loads(kws)
-            except: kws = []
-        items.append({
-            "abstract":  a.get("abstract", "")[:300],
-            "url":       a.get("url", ""),
-            "date":      a.get("date", ""),
-            "website":   a.get("website", ""),
-            "score":     a.get("score", 0),
-            "keywords":  kws[:4],
-        })
+        raw = fetch_json(url)
+        if not raw:
+            continue
 
-    return {"modality": modality, "label": MODALITY_LABELS[modality], "items": items, "date": date}
+        # ✅ ONLY RETURN IF MODALITY EXISTS IN THAT FILE
+        if modality in raw and raw[modality]:
+            articles = raw.get(modality, [])
+
+            items = []
+            for a in articles:
+                kws = a.get("primary_abstract_matched_keywords", [])
+                if isinstance(kws, str):
+                    try:
+                        kws = json.loads(kws)
+                    except:
+                        kws = []
+
+                items.append({
+                    "abstract": a.get("abstract", "")[:300],
+                    "url": a.get("url", ""),
+                    "date": a.get("date", ""),
+                    "website": a.get("website", ""),
+                    "score": a.get("score", 0),
+                    "keywords": kws[:4],
+                })
+
+            return {
+                "modality": modality,
+                "label": MODALITY_LABELS[modality],
+                "items": items,
+                "date": d.isoformat()
+            }
+
+    # ❌ If not found in any file
+    return {"modality": modality, "items": [], "date": None}
 
 
 # ─── HELPER: find modality item in briefs_history ────────────────────────────
