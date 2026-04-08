@@ -300,7 +300,7 @@ def _find_history_item(modality: str):
     market_key   = MODALITY_KEYS_MARKET[modality]       # e.g. "Monoclonal Antibodies"
     pharma_label = MODALITY_LABELS[modality].lower()    # e.g. "monoclonal antibodies"
 
-    history = fetch_json(f"{PHARMA_BASE}/briefs_history.json") or {}
+    history = fetch_json(f"{MARKET_BASE}/briefs_history.json") or {}
     if not history:
         return None, None
 
