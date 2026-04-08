@@ -9,7 +9,7 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 from datetime import datetime, timedelta
-
+from graph_builder import build_graph
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -356,8 +356,15 @@ def get_graph(modality: str):
     if not item:
         return {"nodes": [], "edges": [], "meta": {}}
 
-    # Wrap into the format graph_builder / frontend expects
-    return {"modality_intelligence": [item], "meta": {"run_date": date}}
+    
+    graph = build_graph({
+        "modality_intelligence": [item]
+    })
+
+    # optional: attach date
+    graph["meta"]["run_date"] = date
+
+    return graph
 
 
 # ─── SPA CATCH-ALL ───────────────────────────────────────────────────────────
