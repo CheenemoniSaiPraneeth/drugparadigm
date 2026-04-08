@@ -122,7 +122,7 @@ if STATIC_DIR.exists():
 
 @app.get("/api/modalities")
 def get_modalities():
-    pharma_data = fetch_json(f"{PHARMA_BASE}/briefs_history.json") or {}
+    pharma_data = fetch_json(f"{PHARMA_BASE}/briefs.json") or {}
     preprint_url, preprint_date = get_latest_preprint_url()
     preprint_data = fetch_json(preprint_url) if preprint_url else {}
     market_data = fetch_json(f"{MARKET_BASE}/briefs.json") or {}
@@ -174,26 +174,39 @@ def get_company_news(modality: str):
         raise HTTPException(404, "Unknown modality")
 
     pharma_key = MODALITY_KEYS_PHARMA[modality]
-
-    # briefs_history.json has the correct {date: {modality: [{company, news, url}]}} format
-    raw = fetch_json(f"{PHARMA_BASE}/briefs_history.json")
+    raw = fetch_json(f"{PHARMA_BASE}/briefs.json")
     if not raw:
         return {"modality": modality, "items": []}
 
     items = []
+    # briefs.json is dict of {date: {modality_key: [{company, news, url}...]}}
     if isinstance(raw, dict):
-        for date_key in sorted(raw.keys(), reverse=True):
-            date_group = raw[date_key]
-            if isinstance(date_group, dict):
-                entries = date_group.get(pharma_key, [])
+        # Check if it's directly {modality: [...]}
+        if pharma_key in raw:
+            entries = raw[pharma_key]
+            if isinstance(entries, list):
                 for e in entries:
                     items.append({
                         "company":  e.get("company", ""),
                         "modality": e.get("modality", pharma_key),
                         "news":     e.get("news", ""),
                         "url":      e.get("url", ""),
-                        "date":     date_key,
+                        "date":     e.get("date", ""),
                     })
+        else:
+            # It's {date: {modality: [...]}}
+            for date_key in sorted(raw.keys(), reverse=True):
+                date_group = raw[date_key]
+                if isinstance(date_group, dict):
+                    entries = date_group.get(pharma_key, [])
+                    for e in entries:
+                        items.append({
+                            "company":  e.get("company", ""),
+                            "modality": e.get("modality", pharma_key),
+                            "news":     e.get("news", ""),
+                            "url":      e.get("url", ""),
+                            "date":     date_key,
+                        })
 
     return {"modality": modality, "label": MODALITY_LABELS[modality], "items": items}
 
@@ -276,31 +289,60 @@ def get_preprints(modality: str):
     return {"modality": modality, "label": MODALITY_LABELS[modality], "items": items, "date": date}
 
 
-# ─── API: MARKET (market repo) ───────────────────────────────────────────────
+# ─── HELPER: find modality item in briefs_history ────────────────────────────
+
+def _find_history_item(modality: str):
+    """
+    Walk briefs_history.json newest-first and return the most recent
+    modality_intelligence item for the given modality key.
+    Returns (item, date_string) or (None, None).
+    """
+    market_key   = MODALITY_KEYS_MARKET[modality]       # e.g. "Monoclonal Antibodies"
+    pharma_label = MODALITY_LABELS[modality].lower()    # e.g. "monoclonal antibodies"
+
+    history = fetch_json(f"{PHARMA_BASE}/briefs_history.json") or {}
+    if not history:
+        return None, None
+
+    # Match keys loosely: exact, or market_key substring, or pharma_label substring
+    def _key_matches(history_key: str) -> bool:
+        hk = history_key.lower().strip()
+        return (
+            hk == market_key.lower()
+            or hk == pharma_label
+            or market_key.lower() in hk
+            or pharma_label in hk
+            or any(word in hk for word in pharma_label.split() if len(word) > 4)
+        )
+
+    for date_key in sorted(history.keys(), reverse=True):
+        day = history[date_key]
+        if not isinstance(day, dict):
+            continue
+        for hist_key, items in day.items():
+            if _key_matches(hist_key) and isinstance(items, list) and items:
+                return items[-1], date_key   # return newest item on newest matching date
+
+    return None, None
+
+
+# ─── API: MARKET (reads from pharma-dashboard briefs_history.json) ────────────
 
 @app.get("/api/modality/{modality}/market")
 def get_market(modality: str):
     if modality not in MODALITIES:
         raise HTTPException(404, "Unknown modality")
 
-    market_key = MODALITY_KEYS_MARKET[modality]
-    raw = fetch_json(f"{MARKET_BASE}/briefs.json")
-    if not raw:
-        return {"modality": modality, "data": None}
+    item, date = _find_history_item(modality)
+    if not item:
+        return {"modality": modality, "data": None, "meta": {}}
 
-    meta = raw.get("meta", {})
-    mi = raw.get("modality_intelligence", [])
-
-    for m in mi:
-        if m.get("modality_name", "").lower() == market_key.lower():
-            return {
-                "modality": modality,
-                "label":    MODALITY_LABELS[modality],
-                "meta":     meta,
-                "data":     m,
-            }
-
-    return {"modality": modality, "data": None, "meta": meta}
+    return {
+        "modality": modality,
+        "label":    MODALITY_LABELS[modality],
+        "meta":     {"run_date": date},
+        "data":     item,
+    }
 
 
 # ─── API: MARKET GRAPH ───────────────────────────────────────────────────────
@@ -309,11 +351,13 @@ def get_market(modality: str):
 def get_graph(modality: str):
     if modality not in MODALITIES:
         raise HTTPException(404, "Unknown modality")
-    raw = fetch_json(f"{MARKET_BASE}/briefs.json")
-    if not raw:
-        return {"nodes": [], "edges": []}
-    # Return full data so frontend can build graph
-    return raw
+
+    item, date = _find_history_item(modality)
+    if not item:
+        return {"nodes": [], "edges": [], "meta": {}}
+
+    # Wrap into the format graph_builder / frontend expects
+    return {"modality_intelligence": [item], "meta": {"run_date": date}}
 
 
 # ─── SPA CATCH-ALL ───────────────────────────────────────────────────────────
