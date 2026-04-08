@@ -456,9 +456,12 @@ function renderMarket(m, data) {
     </div>` : ''}
 
     <div class="market-card-title" style="color:${m.color};margin-bottom:12px;margin-top:20px">Knowledge Graph</div>
-    <div class="graph-container">
-      <canvas id="graph-canvas"></canvas>
-    </div>
+    <div class="graph-container" style="height:600px">
+  <iframe 
+    id="graph-frame"
+    style="width:100%; height:100%; border:none;"
+  ></iframe>
+</div>
     <div class="graph-legend" id="graph-legend"></div>
   `;
 }
