@@ -122,7 +122,7 @@ if STATIC_DIR.exists():
 
 @app.get("/api/modalities")
 def get_modalities():
-    pharma_data = fetch_json(f"{PHARMA_BASE}/briefs.json") or {}
+    pharma_data = fetch_json(f"{PHARMA_BASE}/briefs_history.json") or {}
     preprint_url, preprint_date = get_latest_preprint_url()
     preprint_data = fetch_json(preprint_url) if preprint_url else {}
     market_data = fetch_json(f"{MARKET_BASE}/briefs.json") or {}
@@ -174,39 +174,26 @@ def get_company_news(modality: str):
         raise HTTPException(404, "Unknown modality")
 
     pharma_key = MODALITY_KEYS_PHARMA[modality]
-    raw = fetch_json(f"{PHARMA_BASE}/briefs.json")
+
+    # briefs_history.json has the correct {date: {modality: [{company, news, url}]}} format
+    raw = fetch_json(f"{PHARMA_BASE}/briefs_history.json")
     if not raw:
         return {"modality": modality, "items": []}
 
     items = []
-    # briefs.json is dict of {date: {modality_key: [{company, news, url}...]}}
     if isinstance(raw, dict):
-        # Check if it's directly {modality: [...]}
-        if pharma_key in raw:
-            entries = raw[pharma_key]
-            if isinstance(entries, list):
+        for date_key in sorted(raw.keys(), reverse=True):
+            date_group = raw[date_key]
+            if isinstance(date_group, dict):
+                entries = date_group.get(pharma_key, [])
                 for e in entries:
                     items.append({
                         "company":  e.get("company", ""),
                         "modality": e.get("modality", pharma_key),
                         "news":     e.get("news", ""),
                         "url":      e.get("url", ""),
-                        "date":     e.get("date", ""),
+                        "date":     date_key,
                     })
-        else:
-            # It's {date: {modality: [...]}}
-            for date_key in sorted(raw.keys(), reverse=True):
-                date_group = raw[date_key]
-                if isinstance(date_group, dict):
-                    entries = date_group.get(pharma_key, [])
-                    for e in entries:
-                        items.append({
-                            "company":  e.get("company", ""),
-                            "modality": e.get("modality", pharma_key),
-                            "news":     e.get("news", ""),
-                            "url":      e.get("url", ""),
-                            "date":     date_key,
-                        })
 
     return {"modality": modality, "label": MODALITY_LABELS[modality], "items": items}
 
