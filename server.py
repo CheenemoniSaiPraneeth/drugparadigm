@@ -174,7 +174,7 @@ def get_company_news(modality: str):
         raise HTTPException(404, "Unknown modality")
 
     pharma_key = MODALITY_KEYS_PHARMA[modality]
-    raw = fetch_json(f"{PHARMA_BASE}/briefs.json")
+    raw = fetch_json(f"{PHARMA_BASE}/briefs_history.json")
     if not raw:
         return {"modality": modality, "items": []}
 
