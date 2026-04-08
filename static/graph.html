@@ -405,7 +405,7 @@
 </div>
 
 <header>
-  <div class="logo">PHARMA<span>.</span>INTEL</div>
+  <div class="logo">DRUG<span>.</span>PARADIGM</div>
   <div class="filters" id="filters"></div>
   <div class="header-meta">
     <span class="node-count" id="nodeCount">— nodes</span>
@@ -475,21 +475,28 @@ let selectedId = null;
 // Read ?modality= from URL so each card on the dashboard opens its own graph
 const _urlParams   = new URLSearchParams(window.location.search);
 const _modalityParam = _urlParams.get('modality') || '';
-const _apiUrl = _modalityParam
-  ? `/api/graph?modality=${encodeURIComponent(_modalityParam)}`
-  : '/api/graph';
+
+// DrugParadigm uses /api/modality/{key}/graph  (key uses underscores)
+// The ?modality= param may be a label like "Monoclonal Antibodies" or a key like "monoclonal_antibodies"
+function _labelToKey(label) {
+  return label.toLowerCase().replace(/ /g, '_');
+}
+const _modalityKey = _modalityParam ? _labelToKey(_modalityParam) : '';
+const _apiUrl = _modalityKey
+  ? `/api/modality/${encodeURIComponent(_modalityKey)}/graph`
+  : '/api/modality/monoclonal_antibodies/graph';
 
 // Update page title + logo text with modality name
 if (_modalityParam) {
-  document.title = _modalityParam + ' — Knowledge Graph';
+  document.title = _modalityParam + ' — DrugParadigm';
   const logoEl = document.querySelector('.logo');
-  if (logoEl) logoEl.innerHTML = `PHARMA<span>.</span>${_modalityParam.toUpperCase().replace(/ /g,'&nbsp;')}`;
+  if (logoEl) logoEl.innerHTML = `DRUG<span>.</span>${_modalityParam.toUpperCase().replace(/ /g,'&nbsp;')}`;
 }
 
 fetch(_apiUrl)
   .then(r => r.json())
   .then(data => {
-    if (data.no_data || (!data.nodes || data.nodes.length === 0)) {
+    if (!data.nodes || data.nodes.length === 0) {
       const msg  = data.message || `No data yet for "${_modalityParam || 'this modality'}"`;
       const load = document.getElementById('loading');
       load.innerHTML = `
