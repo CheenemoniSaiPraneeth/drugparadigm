@@ -272,7 +272,12 @@ function renderTab(tab, m, data) {
 
   // Init graph after render
   if (tab === 'market') {
-    setTimeout(() => initGraph(m, data), 100);
+    setTimeout(() => {
+  const frame = document.getElementById("graph-frame");
+  if (frame) {
+    frame.src = `/static/graph.html?modality=${m.key}`;
+  }
+}, 100);
   }
 }
 
