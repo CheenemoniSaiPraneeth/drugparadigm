@@ -51,12 +51,6 @@ MODALITY_KEYS_MARKET = {
     "molecular_glues":       "Molecular Glue",
 }
 
-MODALITY_KEYS_NEWSAM = {
-    "bispecific_antibodies": "bispecific_antibodies",
-    "monoclonal_antibodies": "monoclonal_antibodies",
-    "gene_editing":          "gene_editing",
-    "molecular_glues":       "molecular_glues",
-}
 
 MODALITY_COLORS = {
     "bispecific_antibodies": "#4af4b0",
@@ -211,48 +205,30 @@ def get_company_news(modality: str):
     return {"modality": modality, "label": MODALITY_LABELS[modality], "items": items}
 
 
-# ─── API: WEBSITE NEWS (new-sam) ─────────────────────────────────────────────
+# ─── API: WEBSITE NEWS (new-sam brief) ───────────────────────────────────────
 
 @app.get("/api/modality/{modality}/website-news")
 def get_website_news(modality: str):
     if modality not in MODALITIES:
         raise HTTPException(404, "Unknown modality")
 
-    raw = fetch_json(f"{NEWSAM_BASE}/allinone.json")
+    # new-sam repo outputs brief_<modality>.json — same schema as summarizer output:
+    # { "query": "...", "generated_at": "...", "article_count": N,
+    #   "sections": [ { "heading": "...", "points": [{"text":"...","url":"..."}] } ] }
+    raw = fetch_json(f"{NEWSAM_BASE}/brief_{modality}.json")
     if not raw:
-        return {"modality": modality, "items": []}
+        return {"modality": modality, "label": MODALITY_LABELS[modality],
+                "available": False, "sections": [], "generated_at": None, "article_count": 0}
 
-    items = []
-    # allinone.json structure: {"articles": [...], ...} or list
-    articles = []
-    if isinstance(raw, dict):
-        articles = raw.get("articles", [])
-    elif isinstance(raw, list):
-        articles = raw
-
-    newsam_key = MODALITY_KEYS_NEWSAM[modality]
-    pharma_key = MODALITY_KEYS_PHARMA[modality]  # "bispecific antibodies"
-
-    for a in articles:
-        tag = a.get("tag", "").lower()
-        title = a.get("title", "")
-        text = a.get("text", "")[:400]  # truncate for display
-        url = a.get("url", "")
-        date = a.get("date", "")
-
-        # Match by tag or keyword in title
-        label_lower = MODALITY_LABELS[modality].lower()
-        if (tag == "news" or tag == modality or
-            any(k in (title + text).lower() for k in pharma_key.split()[:2])):
-            items.append({
-                "title": title,
-                "text":  text,
-                "url":   url,
-                "date":  date,
-                "tag":   tag,
-            })
-
-    return {"modality": modality, "label": MODALITY_LABELS[modality], "items": items[:30]}
+    return {
+        "modality":      modality,
+        "label":         MODALITY_LABELS[modality],
+        "available":     True,
+        "query":         raw.get("query", ""),
+        "generated_at":  raw.get("generated_at", ""),
+        "article_count": raw.get("article_count", 0),
+        "sections":      raw.get("sections", []),
+    }
 
 
 # ─── API: PREPRINTS (preprint-dashboard) ─────────────────────────────────────
