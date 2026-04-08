@@ -79,6 +79,25 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace
 .brief-article-date{font-size:10px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
 .brief-article-link a{font-size:10px;color:var(--accent2);text-decoration:none;padding:2px 8px;border:1px solid rgba(110,140,255,0.2);border-radius:3px;background:rgba(110,140,255,0.05)}
 .brief-article-link a:hover{background:rgba(110,140,255,0.15)}
+/* WEBSITE NEWS — structured brief sections */
+.wn-sections{display:flex;flex-direction:column;gap:12px}
+.wn-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color 0.15s}
+.wn-section:hover{border-color:var(--border-hi)}
+.wn-section-heading{display:flex;align-items:center;gap:10px;padding:13px 18px;background:var(--surface2);border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.wn-section-icon{font-size:14px;flex-shrink:0}
+.wn-section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#fff;flex:1}
+.wn-section-count{font-size:10px;color:var(--text-dim);background:var(--bg);padding:2px 8px;border-radius:20px;white-space:nowrap}
+.wn-section-chevron{font-size:10px;color:var(--text-dim);margin-left:4px;transition:transform 0.2s}
+.wn-section.wn-collapsed .wn-section-chevron{transform:rotate(-90deg)}
+.wn-section.wn-collapsed .wn-points{display:none}
+.wn-points{padding:4px 0}
+.wn-point{display:flex;align-items:flex-start;gap:11px;padding:10px 18px;border-bottom:1px solid var(--border);transition:background 0.1s}
+.wn-point:last-child{border-bottom:none}
+.wn-point:hover{background:rgba(255,255,255,0.02)}
+.wn-point-dot{width:5px;height:5px;border-radius:50%;margin-top:7px;flex-shrink:0}
+.wn-point-text{flex:1;font-size:12px;color:var(--text-mid);line-height:1.65}
+.wn-point-src{flex-shrink:0;font-size:10px;color:var(--accent2);text-decoration:none;padding:2px 7px;border:1px solid rgba(110,140,255,0.2);border-radius:3px;background:rgba(110,140,255,0.05);white-space:nowrap;margin-top:2px;transition:all 0.15s}
+.wn-point-src:hover{background:rgba(110,140,255,0.15);border-color:rgba(110,140,255,0.4)}
 
 /* PREPRINTS */
 .preprint-list{display:flex;flex-direction:column;gap:10px}
@@ -308,22 +327,49 @@ function renderCompanyNews(m, data) {
 
 // ── WEBSITE NEWS ───────────────────────────────────────────────────────────
 function renderWebsiteNews(m, data) {
-  const items = data.items || [];
-  if (!items.length) return empty('No website news available for this modality.');
+  if (!data.available) return empty('No intelligence brief available for this modality yet.');
+
+  const sections = data.sections || [];
+  if (!sections.length) return empty('No sections found in the intelligence brief.');
+
+  const SECTION_ICONS = {
+    'Overview': '📊',
+    'Key Developments': '🔬',
+    'Companies in Focus': '🏢',
+    'Clinical & Scientific Highlights': '🧪',
+    'Business & Deals': '💼',
+  };
 
   return `
-    <div class="brief-meta-bar">${items.length} articles · sourced from pharma news portals</div>
-    <div class="brief-sections">
-      ${items.map(item => `
-        <div class="brief-article">
-          <div class="brief-article-title">${item.title || 'Untitled'}</div>
-          <div class="brief-article-text">${item.text || ''}</div>
-          <div class="brief-article-footer">
-            ${item.date ? `<span class="brief-article-date">${item.date}</span>` : ''}
-            ${item.url ? `<span class="brief-article-link"><a href="${item.url}" target="_blank" rel="noopener">Read full article ↗</a></span>` : ''}
+    <div class="brief-meta-bar">
+      ${data.article_count || 0} articles analysed
+      · Generated ${data.generated_at ? new Date(data.generated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}
+      · Query: <em>${data.query || ''}</em>
+    </div>
+    <div class="wn-sections">
+      ${sections.map((sec, si) => {
+        const points = sec.points || [];
+        const icon = SECTION_ICONS[sec.heading] || '📌';
+        return `
+          <div class="wn-section">
+            <div class="wn-section-heading" onclick="this.parentElement.classList.toggle('wn-collapsed')">
+              <span class="wn-section-icon">${icon}</span>
+              <span class="wn-section-title">${sec.heading}</span>
+              <span class="wn-section-count">${points.length} points</span>
+              <span class="wn-section-chevron">▼</span>
+            </div>
+            <div class="wn-points">
+              ${points.map(pt => `
+                <div class="wn-point">
+                  <div class="wn-point-dot" style="background:${m.color}"></div>
+                  <div class="wn-point-text">${pt.text || ''}</div>
+                  ${pt.url ? `<a class="wn-point-src" href="${pt.url}" target="_blank" rel="noopener">Source ↗</a>` : ''}
+                </div>
+              `).join('')}
+            </div>
           </div>
-        </div>
-      `).join('')}
+        `;
+      }).join('')}
     </div>
   `;
 }
