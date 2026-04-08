@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Drugparadigm</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#080b12; --surface:#0f1219; --surface2:#161b26;
+  --border:#1a2035; --border-hi:#2a3355;
+  --text:#c8d0e8; --text-dim:#4a5270; --text-mid:#7a84a8;
+  --accent:#4af4b0; --accent2:#6e8cff; --accent3:#f4a24a; --danger:#f46a6a;
+  --r:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:14px;line-height:1.6;min-height:100vh}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+#app{display:flex;flex-direction:column;min-height:100vh}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;border-bottom:1px solid var(--border);background:rgba(8,11,18,0.97);backdrop-filter:blur(16px);position:sticky;top:0;z-index:100}
+.logo-wrap{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-img{height:32px;width:auto}
+.header-right{display:flex;align-items:center;gap:10px}
+.pill{background:rgba(74,244,176,0.08);border:1px solid rgba(74,244,176,0.15);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--accent)}
+
+/* MAIN */
+.main{flex:1;padding:32px;max-width:1300px;margin:0 auto;width:100%}
+
+/* HOME — MODALITY CARDS */
+.section-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:32px}
+.mod-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.mod-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--c,var(--accent));opacity:0.3;transition:opacity 0.2s}
+.mod-card:hover{border-color:var(--border-hi);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.mod-card:hover::after{opacity:1}
+.card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-icon{font-size:20px}
+.card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#fff;margin-bottom:4px}
+.card-sub{font-size:10px;color:var(--text-dim);margin-bottom:14px}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.card-action-tag{font-size:9px;padding:3px 8px;border-radius:3px;border:1px solid;letter-spacing:0.05em;text-transform:uppercase;opacity:0.7}
+
+/* MODALITY PAGE */
+.mod-page-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.back-btn{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:7px 14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-mid);cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.back-btn:hover{border-color:var(--border-hi);color:var(--text)}
+.mod-page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px}
+.tab-btn{padding:10px 20px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.15s;margin-bottom:-1px;white-space:nowrap}
+.tab-btn.active{color:var(--c,var(--accent));border-bottom-color:var(--c,var(--accent))}
+.tab-btn:hover:not(.active){color:var(--text-mid)}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* COMPANY NEWS (pharma style) */
+.news-list{display:flex;flex-direction:column;gap:10px}
+.news-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 22px;display:grid;grid-template-columns:30px 1fr auto;gap:14px;align-items:start;transition:all 0.15s;text-decoration:none;color:inherit}
+.news-item:hover{border-color:var(--border-hi);background:var(--surface2)}
+.news-rank{font-family:'Instrument Serif',serif;font-size:22px;color:var(--text-dim);line-height:1.2}
+.news-company{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-mid);margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase}
+.news-text{font-size:12px;color:var(--text-mid);line-height:1.6}
+.news-text strong{color:var(--text)}
+.news-source{flex-shrink:0}
+.news-source a{color:var(--accent2);font-size:10px;text-decoration:none;padding:3px 8px;border:1px solid rgba(110,140,255,0.2);border-radius:3px;background:rgba(110,140,255,0.05);transition:all 0.15s;white-space:nowrap}
+.news-source a:hover{background:rgba(110,140,255,0.15)}
+.news-date{font-size:10px;color:var(--text-dim);margin-top:4px;font-family:'IBM Plex Mono',monospace}
+
+/* WEBSITE NEWS (new-sam brief style) */
+.brief-meta-bar{font-size:11px;color:var(--text-dim);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.brief-sections{display:flex;flex-direction:column;gap:12px}
+.brief-article{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;transition:all 0.15s}
+.brief-article:hover{border-color:var(--border-hi)}
+.brief-article-title{font-family:'Syne',sans-serif;font-weight:600;font-size:13px;color:var(--text);margin-bottom:6px}
+.brief-article-text{font-size:12px;color:var(--text-mid);line-height:1.7;margin-bottom:8px}
+.brief-article-footer{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brief-article-date{font-size:10px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
+.brief-article-link a{font-size:10px;color:var(--accent2);text-decoration:none;padding:2px 8px;border:1px solid rgba(110,140,255,0.2);border-radius:3px;background:rgba(110,140,255,0.05)}
+.brief-article-link a:hover{background:rgba(110,140,255,0.15)}
+
+/* PREPRINTS */
+.preprint-list{display:flex;flex-direction:column;gap:10px}
+.preprint-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;display:grid;grid-template-columns:28px 1fr;gap:12px;transition:all 0.15s}
+.preprint-item:hover{border-color:var(--border-hi)}
+.preprint-num{font-family:'Instrument Serif',serif;font-size:20px;color:var(--text-dim);line-height:1.3}
+.preprint-abstract{font-size:12px;color:var(--text-mid);line-height:1.7;margin-bottom:8px}
+.preprint-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.preprint-tag{font-size:9px;padding:2px 7px;border-radius:3px;border:1px solid;letter-spacing:0.05em}
+.preprint-site{font-size:10px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace}
+.preprint-link a{font-size:10px;color:var(--accent2);text-decoration:none;padding:2px 8px;border:1px solid rgba(110,140,255,0.2);border-radius:3px;background:rgba(110,140,255,0.05)}
+.preprint-score{font-size:10px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;margin-left:auto}
+
+/* MARKET */
+.market-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.market-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.market-card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px}
+.market-text{font-size:12px;color:var(--text-mid);line-height:1.7}
+.market-transitions{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.market-transition{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px}
+.market-transition-name{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px}
+.market-transition-detail{font-size:11px;color:var(--text-mid);line-height:1.6}
+
+/* KNOWLEDGE GRAPH */
+.graph-container{width:100%;height:600px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);position:relative;overflow:hidden}
+#graph-canvas{width:100%;height:100%}
+.graph-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-dim)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+
+/* EMPTY / LOADING */
+.loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text-dim);font-size:12px;gap:10px}
+.spinner{width:16px;height:16px;border:2px solid var(--border-hi);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:48px;text-align:center;color:var(--text-dim);font-size:12px}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:0.4}
+.fade-in{animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:700px){.main{padding:16px}.header{padding:12px 16px}.tabs{overflow-x:auto}.market-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="header">
+    <a class="logo-wrap" href="#" onclick="goHome();return false">
+      <img class="logo-img" src="/static/logo.png" alt="Drugparadigm"/>
+    </a>
+    <div class="header-right">
+      <div class="pill" id="date-pill"></div>
+    </div>
+  </header>
+  <main class="main" id="main-content"></main>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const MODALITIES = [
+  { key:'bispecific_antibodies',  label:'Bispecific Antibodies',  color:'#4af4b0', icon:'⬡', tags:['bispecific','BiTE','T-cell engager'] },
+  { key:'monoclonal_antibodies',  label:'Monoclonal Antibodies',  color:'#6e8cff', icon:'◎', tags:['monoclonal','mAb','therapeutic antibody'] },
+  { key:'gene_editing',           label:'Gene Editing',           color:'#f4a24a', icon:'⟐', tags:['CRISPR','Cas9','base editing'] },
+  { key:'molecular_glues',        label:'Molecular Glues',        color:'#f46a6a', icon:'◈', tags:['molecular glue','TPD','E3 ligase'] },
+];
+
+let currentModality = null;
+let currentTab = 'company-news';
+let modalityData = {};
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+async function api(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+function el(id) { return document.getElementById(id); }
+function qs(sel) { return document.querySelector(sel); }
+
+function loading() {
+  return `<div class="loading"><div class="spinner"></div> Loading…</div>`;
+}
+
+function empty(msg='No data available') {
+  return `<div class="empty"><div class="empty-icon">📭</div>${msg}</div>`;
+}
+
+// ── DATE PILL ──────────────────────────────────────────────────────────────
+el('date-pill').textContent = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+// ── HOME PAGE ──────────────────────────────────────────────────────────────
+function goHome() {
+  currentModality = null;
+  renderHome();
+}
+
+async function renderHome() {
+  const main = el('main-content');
+  main.innerHTML = `<div class="section-title">Modality Intelligence</div><div class="loading"><div class="spinner"></div> Loading…</div>`;
+
+  let overview = [];
+  try { overview = await api('/api/modalities'); } catch(e) {}
+
+  const overviewMap = {};
+  for (const m of overview) overviewMap[m.key] = m;
+
+  main.innerHTML = `
+    <div class="section-title">Select a Modality</div>
+    <div class="cards-grid fade-in">
+      ${MODALITIES.map(m => {
+        const ov = overviewMap[m.key] || {};
+        return `<div class="mod-card" style="--c:${m.color}" onclick="openModality('${m.key}')">
+          <div class="card-top">
+            <span class="card-icon">${m.icon}</span>
+            <span style="font-size:10px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace">${ov.preprint_date || ''}</span>
+          </div>
+          <div class="card-title">${m.label}</div>
+          <div class="card-sub" style="color:${m.color};opacity:0.7">
+            ${ov.pharma_count ? ov.pharma_count+' company briefs · ' : ''}${ov.preprint_count ? ov.preprint_count+' preprints' : ''}
+          </div>
+          <div class="card-actions">
+            ${m.tags.map(t => `<span class="card-action-tag" style="color:${m.color};border-color:${m.color}33">${t}</span>`).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ── MODALITY PAGE ──────────────────────────────────────────────────────────
+async function openModality(key) {
+  currentModality = key;
+  currentTab = 'company-news';
+  const m = MODALITIES.find(x => x.key === key);
+  renderModalityPage(m);
+}
+
+function renderModalityPage(m) {
+  const main = el('main-content');
+  main.innerHTML = `
+    <div class="mod-page-header fade-in">
+      <button class="back-btn" onclick="goHome()">← All Modalities</button>
+      <div class="mod-page-title" style="color:${m.color}">${m.label}</div>
+    </div>
+    <div class="tabs" style="--c:${m.color}">
+      <button class="tab-btn active" onclick="switchTab('company-news',this)" data-tab="company-news">📰 Company News</button>
+      <button class="tab-btn" onclick="switchTab('website-news',this)" data-tab="website-news">🌐 Website News</button>
+      <button class="tab-btn" onclick="switchTab('preprints',this)" data-tab="preprints">🔬 Preprints</button>
+      <button class="tab-btn" onclick="switchTab('market',this)" data-tab="market">📊 Market</button>
+    </div>
+    <div id="tab-body" class="fade-in"></div>
+  `;
+  loadTab('company-news', m);
+}
+
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const m = MODALITIES.find(x => x.key === currentModality);
+  loadTab(tab, m);
+}
+
+async function loadTab(tab, m) {
+  const body = el('tab-body');
+  if (!body) return;
+  body.innerHTML = loading();
+
+  // Use cache if available
+  const cacheKey = `${m.key}__${tab}`;
+  if (modalityData[cacheKey]) {
+    renderTab(tab, m, modalityData[cacheKey]);
+    return;
+  }
+
+  try {
+    const data = await api(`/api/modality/${m.key}/${tab}`);
+    modalityData[cacheKey] = data;
+    renderTab(tab, m, data);
+  } catch(e) {
+    body.innerHTML = empty('Failed to load data. Please try again.');
+  }
+}
+
+function renderTab(tab, m, data) {
+  const body = el('tab-body');
+  if (!body) return;
+
+  if (tab === 'company-news') body.innerHTML = renderCompanyNews(m, data);
+  else if (tab === 'website-news') body.innerHTML = renderWebsiteNews(m, data);
+  else if (tab === 'preprints') body.innerHTML = renderPreprints(m, data);
+  else if (tab === 'market') body.innerHTML = renderMarket(m, data);
+
+  // Init graph after render
+  if (tab === 'market' && data && data.data) {
+    setTimeout(() => initGraph(m, data), 100);
+  }
+}
+
+// ── COMPANY NEWS ───────────────────────────────────────────────────────────
+function renderCompanyNews(m, data) {
+  const items = data.items || [];
+  if (!items.length) return empty('No company news available for this modality.');
+
+  return `
+    <div class="brief-meta-bar">${items.length} briefs · sourced from pharma press releases</div>
+    <div class="news-list">
+      ${items.slice(0,50).map((item, i) => `
+        <div class="news-item">
+          <div class="news-rank">${i+1}</div>
+          <div>
+            <div class="news-company" style="color:${m.color}">${item.company || 'Unknown'} · ${item.modality || ''}</div>
+            <div class="news-text">${item.news || ''}</div>
+            ${item.date ? `<div class="news-date">${item.date}</div>` : ''}
+          </div>
+          <div class="news-source">
+            ${item.url ? `<a href="${item.url}" target="_blank" rel="noopener">Source ↗</a>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ── WEBSITE NEWS ───────────────────────────────────────────────────────────
+function renderWebsiteNews(m, data) {
+  const items = data.items || [];
+  if (!items.length) return empty('No website news available for this modality.');
+
+  return `
+    <div class="brief-meta-bar">${items.length} articles · sourced from pharma news portals</div>
+    <div class="brief-sections">
+      ${items.map(item => `
+        <div class="brief-article">
+          <div class="brief-article-title">${item.title || 'Untitled'}</div>
+          <div class="brief-article-text">${item.text || ''}</div>
+          <div class="brief-article-footer">
+            ${item.date ? `<span class="brief-article-date">${item.date}</span>` : ''}
+            ${item.url ? `<span class="brief-article-link"><a href="${item.url}" target="_blank" rel="noopener">Read full article ↗</a></span>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ── PREPRINTS ──────────────────────────────────────────────────────────────
+function renderPreprints(m, data) {
+  const items = data.items || [];
+  const date = data.date || '';
+  if (!items.length) return empty('No preprints found for this modality.');
+
+  return `
+    <div class="brief-meta-bar">${items.length} preprints · scraped ${date} · from bioRxiv, medRxiv, ChemRxiv, arXiv</div>
+    <div class="preprint-list">
+      ${items.map((item, i) => {
+        const kws = Array.isArray(item.keywords) ? item.keywords : [];
+        return `<div class="preprint-item">
+          <div class="preprint-num">${i+1}</div>
+          <div>
+            <div class="preprint-abstract">${item.abstract || ''}</div>
+            <div class="preprint-footer">
+              ${kws.map(k => `<span class="preprint-tag" style="color:${m.color};border-color:${m.color}44">${k}</span>`).join('')}
+              ${item.website ? `<span class="preprint-site">${item.website}</span>` : ''}
+              ${item.url ? `<span class="preprint-link"><a href="${item.url}" target="_blank" rel="noopener">Paper ↗</a></span>` : ''}
+              ${item.score ? `<span class="preprint-score">score: ${item.score}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ── MARKET ─────────────────────────────────────────────────────────────────
+function renderMarket(m, data) {
+  const d = data.data;
+  if (!d) return empty('Market intelligence not yet available for this modality.');
+
+  const evol = d.evolution_and_direction || {};
+  const transitions = evol.key_transitions || [];
+  const companies = d.companies_landscape || {};
+  const majorPharma = companies.major_pharma || [];
+  const emerging = companies.emerging_biotech || [];
+  const deals = d.key_deals || [];
+
+  return `
+    <div class="market-grid">
+      <div class="market-card">
+        <div class="market-card-title" style="color:${m.color}">Current State</div>
+        <div class="market-text">${evol.current_state || 'No data'}</div>
+      </div>
+      <div class="market-card">
+        <div class="market-card-title" style="color:${m.color}">Next Direction</div>
+        <div class="market-text">${evol.next_direction || 'No data'}</div>
+      </div>
+    </div>
+
+    ${transitions.length ? `
+    <div class="market-card" style="margin-bottom:16px">
+      <div class="market-card-title" style="color:${m.color}">Key Transitions</div>
+      <div class="market-transitions">
+        ${transitions.map(t => `
+          <div class="market-transition">
+            <div class="market-transition-name">${t.transition || ''}</div>
+            <div class="market-transition-detail">${t.detail || ''}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+
+    ${(majorPharma.length || emerging.length) ? `
+    <div class="market-grid">
+      ${majorPharma.length ? `<div class="market-card">
+        <div class="market-card-title" style="color:${m.color}">Major Pharma</div>
+        ${majorPharma.map(c => `<div class="market-text" style="margin-bottom:6px"><strong style="color:var(--text)">${c.company || c}</strong>${c.focus ? ` — ${c.focus}` : ''}</div>`).join('')}
+      </div>` : ''}
+      ${emerging.length ? `<div class="market-card">
+        <div class="market-card-title" style="color:${m.color}">Emerging Biotech</div>
+        ${emerging.map(c => `<div class="market-text" style="margin-bottom:6px"><strong style="color:var(--text)">${c.company || c}</strong>${c.focus ? ` — ${c.focus}` : ''}</div>`).join('')}
+      </div>` : ''}
+    </div>` : ''}
+
+    ${deals.length ? `
+    <div class="market-card" style="margin-bottom:16px">
+      <div class="market-card-title" style="color:${m.color}">Key Deals</div>
+      ${deals.map(deal => `
+        <div class="market-transition" style="margin-bottom:8px">
+          <div class="market-transition-name">${deal.deal_name || deal.companies || ''}</div>
+          <div class="market-transition-detail">${deal.detail || deal.description || ''}</div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+
+    <div class="market-card-title" style="color:${m.color};margin-bottom:12px;margin-top:8px">Knowledge Graph</div>
+    <div class="graph-container">
+      <canvas id="graph-canvas"></canvas>
+    </div>
+    <div class="graph-legend" id="graph-legend"></div>
+  `;
+}
+
+// ── KNOWLEDGE GRAPH (canvas-based bubble visualization) ────────────────────
+function initGraph(m, data) {
+  const canvas = document.getElementById('graph-canvas');
+  if (!canvas) return;
+
+  const d = data.data || {};
+  const nodes = buildNodes(m, d);
+  if (!nodes.length) return;
+
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+
+  // Build legend
+  const legendTypes = [...new Set(nodes.map(n => n.type))];
+  const legendEl = document.getElementById('graph-legend');
+  if (legendEl) {
+    legendEl.innerHTML = legendTypes.map(t => {
+      const color = NODE_COLORS[t] || '#888';
+      return `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div>${t}</div>`;
+    }).join('');
+  }
+
+  // Layout nodes in force-directed style (simple simulation)
+  const W = canvas.width, H = canvas.height;
+  const centerX = W/2, centerY = H/2;
+
+  // Position: root at center, others around
+  nodes[0].x = centerX; nodes[0].y = centerY;
+  const others = nodes.slice(1);
+  others.forEach((n, i) => {
+    const angle = (i / others.length) * Math.PI * 2;
+    const r = 100 + Math.random() * 150;
+    n.x = centerX + Math.cos(angle) * r;
+    n.y = centerY + Math.sin(angle) * r;
+  });
+
+  // Simple spring simulation
+  for (let iter = 0; iter < 80; iter++) {
+    nodes.forEach(a => {
+      nodes.forEach(b => {
+        if (a === b) return;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.sqrt(dx*dx+dy*dy) || 1;
+        const force = 2000 / (dist*dist);
+        a.x -= (dx/dist)*force*0.1;
+        a.y -= (dy/dist)*force*0.1;
+      });
+      // Attract to center
+      a.x += (centerX - a.x) * 0.01;
+      a.y += (centerY - a.y) * 0.01;
+      // Bounds
+      a.x = Math.max(a.r+10, Math.min(W-a.r-10, a.x));
+      a.y = Math.max(a.r+10, Math.min(H-a.r-10, a.y));
+    });
+  }
+
+  // Draw
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    // Lines from root to all
+    const root = nodes[0];
+    nodes.slice(1).forEach(n => {
+      ctx.beginPath();
+      ctx.moveTo(root.x, root.y);
+      ctx.lineTo(n.x, n.y);
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // Nodes
+    nodes.forEach(n => {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+      ctx.fillStyle = n.color + '33';
+      ctx.fill();
+      ctx.strokeStyle = n.color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Label
+      ctx.fillStyle = '#c8d0e8';
+      ctx.font = `${n === root ? 11 : 9}px DM Mono, monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const label = n.label.length > 20 ? n.label.slice(0,18)+'…' : n.label;
+      ctx.fillText(label, n.x, n.y + n.r + 12);
+    });
+  }
+
+  draw();
+
+  // Tooltip on hover
+  canvas.onmousemove = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    let hovered = null;
+    nodes.forEach(n => {
+      const dx = mx-n.x, dy = my-n.y;
+      if (Math.sqrt(dx*dx+dy*dy) < n.r) hovered = n;
+    });
+    canvas.style.cursor = hovered ? 'pointer' : 'default';
+    draw();
+    if (hovered) {
+      ctx.fillStyle = 'rgba(15,18,25,0.9)';
+      ctx.strokeStyle = hovered.color;
+      const tw = Math.min(200, hovered.label.length * 7 + 20);
+      ctx.beginPath();
+      ctx.roundRect(mx+10, my-20, tw, 36, 4);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#c8d0e8';
+      ctx.font = '10px DM Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(hovered.label, mx+18, my-2);
+    }
+  };
+}
+
+const NODE_COLORS = {
+  'Root':        '#ffffff',
+  'Major Pharma':'#4af4b0',
+  'Emerging':    '#6e8cff',
+  'Transition':  '#f4a24a',
+  'Risk':        '#f46a6a',
+  'Deal':        '#b388ff',
+  'Insight':     '#40c4ff',
+};
+
+function buildNodes(m, d) {
+  const nodes = [];
+  // Root node
+  nodes.push({ label: d.modality_name || m.label, type:'Root', color:'#ffffff', r:28, x:0, y:0 });
+
+  const evol = d.evolution_and_direction || {};
+  const transitions = evol.key_transitions || [];
+  transitions.forEach(t => {
+    nodes.push({ label: t.transition || '', type:'Transition', color: NODE_COLORS['Transition'], r:14 });
+  });
+
+  const companies = d.companies_landscape || {};
+  (companies.major_pharma || []).forEach(c => {
+    nodes.push({ label: c.company || c, type:'Major Pharma', color: NODE_COLORS['Major Pharma'], r:18 });
+  });
+  (companies.emerging_biotech || []).forEach(c => {
+    nodes.push({ label: c.company || c, type:'Emerging', color: NODE_COLORS['Emerging'], r:14 });
+  });
+
+  const risks = d.risks_and_challenges || [];
+  risks.forEach(r => {
+    nodes.push({ label: r.risk || r, type:'Risk', color: NODE_COLORS['Risk'], r:12 });
+  });
+
+  const deals = d.key_deals || [];
+  deals.forEach(deal => {
+    nodes.push({ label: deal.deal_name || deal.companies || 'Deal', type:'Deal', color: NODE_COLORS['Deal'], r:13 });
+  });
+
+  const insights = d.key_insights || [];
+  insights.forEach(ins => {
+    nodes.push({ label: typeof ins === 'string' ? ins : ins.insight || '', type:'Insight', color: NODE_COLORS['Insight'], r:11 });
+  });
+
+  return nodes.filter(n => n.label);
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+renderHome();
+</script>
+</body>
+</html>
