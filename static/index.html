@@ -271,7 +271,7 @@ function renderTab(tab, m, data) {
   else if (tab === 'market') body.innerHTML = renderMarket(m, data);
 
   // Init graph after render
-  if (tab === 'market') {
+  if (tab === 'market' && data && data.data) {
     setTimeout(() => initGraph(m, data), 100);
   }
 }
@@ -356,55 +356,33 @@ function renderMarket(m, data) {
   const d = data.data;
   if (!d) return empty('Market intelligence not yet available for this modality.');
 
-  const evol        = d.evolution_and_direction || {};
+  const evol = d.evolution_and_direction || {};
   const transitions = evol.key_transitions || [];
-  const kp          = d.key_players || {};
-  const majorPharma = kp.major || [];
-  const emerging    = kp.emerging || [];
-  const collab      = d.collaborations_and_deals || {};
-  const deals       = collab.deals || [];
-  const grow        = d.growth_trajectory || {};
-  const impl        = d.implementation_stage || {};
-  const risks       = d.risks || {};
-  const bn          = d.bottlenecks || {};
-  const runDate     = (data.meta || {}).run_date || '';
-
-  // Helper: extract name from {company_name:...} or raw string
-  const name = e => (typeof e === 'string' ? e : (e.company_name || e.company || '')).trim();
-  const reason = e => (typeof e === 'object' ? (e.reasoning || '') : '');
+  const companies = d.companies_landscape || {};
+  const majorPharma = companies.major_pharma || [];
+  const emerging = companies.emerging_biotech || [];
+  const deals = d.key_deals || [];
 
   return `
-    ${runDate ? `<div class="brief-meta-bar">Market intelligence · ${runDate}</div>` : ''}
-
     <div class="market-grid">
       <div class="market-card">
         <div class="market-card-title" style="color:${m.color}">Current State</div>
-        <div class="market-text">${(evol.current_state || 'No data').slice(0,400)}</div>
+        <div class="market-text">${evol.current_state || 'No data'}</div>
       </div>
       <div class="market-card">
         <div class="market-card-title" style="color:${m.color}">Next Direction</div>
-        <div class="market-text">${(evol.next_direction || 'No data').slice(0,400)}</div>
+        <div class="market-text">${evol.next_direction || 'No data'}</div>
       </div>
     </div>
-
-    ${grow.trend ? `
-    <div class="market-card" style="margin-bottom:16px">
-      <div class="market-card-title" style="color:${m.color}">Growth Trajectory</div>
-      <div class="market-text">${grow.trend.slice(0,300)}</div>
-      ${grow.signals && grow.signals.length ? `
-        <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
-          ${grow.signals.slice(0,4).map(s => `<span class="card-action-tag" style="color:${m.color};border-color:${m.color}33">${s.slice(0,60)}</span>`).join('')}
-        </div>` : ''}
-    </div>` : ''}
 
     ${transitions.length ? `
     <div class="market-card" style="margin-bottom:16px">
       <div class="market-card-title" style="color:${m.color}">Key Transitions</div>
       <div class="market-transitions">
-        ${transitions.slice(0,4).map(t => `
+        ${transitions.map(t => `
           <div class="market-transition">
             <div class="market-transition-name">${t.transition || ''}</div>
-            <div class="market-transition-detail">${(t.detail || '').slice(0,200)}</div>
+            <div class="market-transition-detail">${t.detail || ''}</div>
           </div>
         `).join('')}
       </div>
@@ -413,49 +391,27 @@ function renderMarket(m, data) {
     ${(majorPharma.length || emerging.length) ? `
     <div class="market-grid">
       ${majorPharma.length ? `<div class="market-card">
-        <div class="market-card-title" style="color:${m.color}">Major Players</div>
-        ${majorPharma.slice(0,6).map(c => `
-          <div style="margin-bottom:8px">
-            <div class="market-text"><strong style="color:var(--text)">${name(c)}</strong></div>
-            ${reason(c) ? `<div class="market-text" style="font-size:11px;margin-top:2px">${reason(c).slice(0,100)}</div>` : ''}
-          </div>`).join('')}
+        <div class="market-card-title" style="color:${m.color}">Major Pharma</div>
+        ${majorPharma.map(c => `<div class="market-text" style="margin-bottom:6px"><strong style="color:var(--text)">${c.company || c}</strong>${c.focus ? ` — ${c.focus}` : ''}</div>`).join('')}
       </div>` : ''}
       ${emerging.length ? `<div class="market-card">
         <div class="market-card-title" style="color:${m.color}">Emerging Biotech</div>
-        ${emerging.slice(0,6).map(c => `
-          <div style="margin-bottom:8px">
-            <div class="market-text"><strong style="color:var(--text)">${name(c)}</strong></div>
-            ${reason(c) ? `<div class="market-text" style="font-size:11px;margin-top:2px">${reason(c).slice(0,100)}</div>` : ''}
-          </div>`).join('')}
+        ${emerging.map(c => `<div class="market-text" style="margin-bottom:6px"><strong style="color:var(--text)">${c.company || c}</strong>${c.focus ? ` — ${c.focus}` : ''}</div>`).join('')}
       </div>` : ''}
     </div>` : ''}
 
     ${deals.length ? `
     <div class="market-card" style="margin-bottom:16px">
-      <div class="market-card-title" style="color:${m.color}">Key Deals · ${collab.total_number_of_deals || deals.length} total</div>
-      ${deals.slice(0,5).map(deal => `
+      <div class="market-card-title" style="color:${m.color}">Key Deals</div>
+      ${deals.map(deal => `
         <div class="market-transition" style="margin-bottom:8px">
-          <div class="market-transition-name">${deal.company_1 || ''}${deal.company_2 ? ' × ' + deal.company_2 : ''} <span style="font-size:10px;color:var(--text-dim)">${deal.deal_type || ''} ${deal.year || ''}</span></div>
-          <div class="market-transition-detail">${(deal.deal_description || '').slice(0,160)}</div>
-          ${deal.deal_value_or_size && deal.deal_value_or_size !== 'Undisclosed' ? `<div style="font-size:10px;color:${m.color};margin-top:3px">${deal.deal_value_or_size}</div>` : ''}
+          <div class="market-transition-name">${deal.deal_name || deal.companies || ''}</div>
+          <div class="market-transition-detail">${deal.detail || deal.description || ''}</div>
         </div>
       `).join('')}
     </div>` : ''}
 
-    ${risks.key_risks && risks.key_risks.length ? `
-    <div class="market-grid">
-      <div class="market-card">
-        <div class="market-card-title" style="color:#f46a6a">Key Risks</div>
-        ${risks.key_risks.slice(0,4).map(r => `<div class="market-text" style="margin-bottom:5px">⚠ ${(typeof r==='string'?r:r.risk||'').slice(0,120)}</div>`).join('')}
-      </div>
-      ${(bn.technical||[]).length ? `<div class="market-card">
-        <div class="market-card-title" style="color:var(--text-dim)">Bottlenecks</div>
-        ${(bn.technical||[]).slice(0,3).map(b=>`<div class="market-text" style="margin-bottom:5px">⬡ ${b.slice(0,120)}</div>`).join('')}
-        ${(bn.business||[]).slice(0,2).map(b=>`<div class="market-text" style="margin-bottom:5px">◈ ${b.slice(0,120)}</div>`).join('')}
-      </div>` : ''}
-    </div>` : ''}
-
-    <div class="market-card-title" style="color:${m.color};margin-bottom:12px;margin-top:20px">Knowledge Graph</div>
+    <div class="market-card-title" style="color:${m.color};margin-bottom:12px;margin-top:8px">Knowledge Graph</div>
     <div class="graph-container">
       <canvas id="graph-canvas"></canvas>
     </div>
@@ -463,217 +419,169 @@ function renderMarket(m, data) {
   `;
 }
 
-// ── KNOWLEDGE GRAPH ────────────────────────────────────────────────────────
-async function initGraph(m, data) {
+// ── KNOWLEDGE GRAPH (canvas-based bubble visualization) ────────────────────
+function initGraph(m, data) {
   const canvas = document.getElementById('graph-canvas');
   if (!canvas) return;
 
-  // Fetch proper graph data from /api/modality/{key}/graph
-  let graphData = null;
-  try {
-    graphData = await api(`/api/modality/${m.key}/graph`);
-  } catch(e) {}
-
   const d = data.data || {};
-  // Build nodes from graph API data if available, else fall back to market data
-  const nodes = (graphData && graphData.nodes && graphData.nodes.length)
-    ? graphData.nodes.map(n => ({
-        label: n.label,
-        type:  n.type,
-        color: GRAPH_NODE_COLORS[n.type] || '#888',
-        r:     n.size || 14,
-        desc:  n.desc || '',
-        x: 0, y: 0
-      }))
-    : buildNodes(m, d);
-
-  if (!nodes.length) {
-    canvas.parentElement.innerHTML = `<div class="empty"><div class="empty-icon">📊</div>No graph data yet for this modality.</div>`;
-    return;
-  }
+  const nodes = buildNodes(m, d);
+  if (!nodes.length) return;
 
   const ctx = canvas.getContext('2d');
-  canvas.width  = canvas.offsetWidth  || 900;
-  canvas.height = canvas.offsetHeight || 600;
-  const W = canvas.width, H = canvas.height;
-  const cx = W/2, cy = H/2;
-
-  // Build edge list from graph API or connect everything to root
-  let edgePairs = [];
-  if (graphData && graphData.edges && graphData.edges.length) {
-    edgePairs = graphData.edges;
-  } else {
-    for (let i = 1; i < nodes.length; i++) edgePairs.push([0, i]);
-  }
-
-  // Layout: root centre, others in rings by type
-  const typeOrder = ['insight','company_major','company_emerging','trend','deal','risk','bottleneck','stage','cdmo'];
-  nodes[0].x = cx; nodes[0].y = cy;
-  const rest = nodes.slice(1);
-  rest.forEach((n, i) => {
-    const angle = (i / rest.length) * Math.PI * 2 - Math.PI/2;
-    const typeRing = typeOrder.indexOf(n.type);
-    const r = 120 + (typeRing < 0 ? 1 : typeRing % 3) * 70 + Math.random() * 40;
-    n.x = cx + Math.cos(angle) * r;
-    n.y = cy + Math.sin(angle) * r;
-  });
-
-  // Force-directed simulation
-  for (let iter = 0; iter < 120; iter++) {
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i+1; j < nodes.length; j++) {
-        const a = nodes[i], b = nodes[j];
-        const dx = b.x - a.x, dy = b.y - a.y;
-        const dist = Math.sqrt(dx*dx+dy*dy) || 1;
-        const rep = 3500 / (dist*dist);
-        const fx = (dx/dist)*rep*0.08, fy = (dy/dist)*rep*0.08;
-        if (i > 0) { a.x -= fx; a.y -= fy; }
-        if (j > 0) { b.x += fx; b.y += fy; }
-      }
-    }
-    edgePairs.forEach(([ai, bi]) => {
-      if (ai >= nodes.length || bi >= nodes.length) return;
-      const a = nodes[ai], b = nodes[bi];
-      const dx = b.x - a.x, dy = b.y - a.y;
-      const dist = Math.sqrt(dx*dx+dy*dy) || 1;
-      const spring = (dist - 140) * 0.04;
-      const fx = (dx/dist)*spring, fy = (dy/dist)*spring;
-      if (ai > 0) { a.x += fx; a.y += fy; }
-      if (bi > 0) { b.x -= fx; b.y -= fy; }
-    });
-    nodes.forEach(n => {
-      n.x += (cx - n.x) * 0.008;
-      n.y += (cy - n.y) * 0.008;
-      n.x = Math.max(n.r+8, Math.min(W-n.r-8, n.x));
-      n.y = Math.max(n.r+8, Math.min(H-n.r-8, n.y));
-    });
-  }
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
 
   // Build legend
   const legendTypes = [...new Set(nodes.map(n => n.type))];
   const legendEl = document.getElementById('graph-legend');
-  const TYPE_LABELS = {
-    insight:'Insight/Root', company_major:'Major Player', company_emerging:'Emerging Biotech',
-    trend:'Transition/Trend', deal:'Deal', risk:'Risk', bottleneck:'Bottleneck',
-    stage:'Stage', cdmo:'CDMO/Platform'
-  };
   if (legendEl) {
     legendEl.innerHTML = legendTypes.map(t => {
-      const color = GRAPH_NODE_COLORS[t] || '#888';
-      return `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div>${TYPE_LABELS[t]||t}</div>`;
+      const color = NODE_COLORS[t] || '#888';
+      return `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div>${t}</div>`;
     }).join('');
   }
 
-  let hoveredNode = null;
+  // Layout nodes in force-directed style (simple simulation)
+  const W = canvas.width, H = canvas.height;
+  const centerX = W/2, centerY = H/2;
 
+  // Position: root at center, others around
+  nodes[0].x = centerX; nodes[0].y = centerY;
+  const others = nodes.slice(1);
+  others.forEach((n, i) => {
+    const angle = (i / others.length) * Math.PI * 2;
+    const r = 100 + Math.random() * 150;
+    n.x = centerX + Math.cos(angle) * r;
+    n.y = centerY + Math.sin(angle) * r;
+  });
+
+  // Simple spring simulation
+  for (let iter = 0; iter < 80; iter++) {
+    nodes.forEach(a => {
+      nodes.forEach(b => {
+        if (a === b) return;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.sqrt(dx*dx+dy*dy) || 1;
+        const force = 2000 / (dist*dist);
+        a.x -= (dx/dist)*force*0.1;
+        a.y -= (dy/dist)*force*0.1;
+      });
+      // Attract to center
+      a.x += (centerX - a.x) * 0.01;
+      a.y += (centerY - a.y) * 0.01;
+      // Bounds
+      a.x = Math.max(a.r+10, Math.min(W-a.r-10, a.x));
+      a.y = Math.max(a.r+10, Math.min(H-a.r-10, a.y));
+    });
+  }
+
+  // Draw
   function draw() {
-    ctx.clearRect(0, 0, W, H);
-
-    // Draw edges
-    edgePairs.forEach(([ai, bi]) => {
-      if (ai >= nodes.length || bi >= nodes.length) return;
-      const a = nodes[ai], b = nodes[bi];
+    ctx.clearRect(0,0,W,H);
+    // Lines from root to all
+    const root = nodes[0];
+    nodes.slice(1).forEach(n => {
       ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      const isHovered = hoveredNode && (hoveredNode === a || hoveredNode === b);
-      ctx.strokeStyle = isHovered ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = isHovered ? 1.5 : 0.8;
+      ctx.moveTo(root.x, root.y);
+      ctx.lineTo(n.x, n.y);
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
       ctx.stroke();
     });
 
-    // Draw nodes
+    // Nodes
     nodes.forEach(n => {
-      const isHov = hoveredNode === n;
       ctx.beginPath();
-      ctx.arc(n.x, n.y, isHov ? n.r+2 : n.r, 0, Math.PI*2);
-      ctx.fillStyle = n.color + (isHov ? '55' : '22');
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+      ctx.fillStyle = n.color + '33';
       ctx.fill();
-      ctx.strokeStyle = n.color + (isHov ? 'ff' : 'bb');
-      ctx.lineWidth = isHov ? 2 : 1.2;
+      ctx.strokeStyle = n.color;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
       // Label
-      const label = n.label.length > 22 ? n.label.slice(0,20)+'…' : n.label;
-      ctx.fillStyle = isHov ? '#fff' : '#c8d0e8';
-      ctx.font = `${n === nodes[0] ? 11 : 9}px DM Mono, monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(label, n.x, n.y + n.r + 4);
-    });
-
-    // Tooltip for hovered
-    if (hoveredNode && hoveredNode.desc) {
-      const mx = hoveredNode.x, my = hoveredNode.y - hoveredNode.r - 10;
-      const lines = hoveredNode.desc.slice(0,120).split(' ');
-      let line = '', ls = [];
-      lines.forEach(w => { if ((line+' '+w).length > 38) { ls.push(line); line = w; } else line += ' '+w; });
-      if (line) ls.push(line);
-      const tw = 220, th = ls.length * 15 + 12;
-      const tx = Math.max(4, Math.min(W-tw-4, mx - tw/2));
-      const ty = Math.max(4, my - th);
-      ctx.fillStyle = 'rgba(15,18,25,0.95)';
-      ctx.strokeStyle = hoveredNode.color;
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.roundRect(tx, ty, tw, th, 4); ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#c8d0e8';
-      ctx.font = '9px DM Mono, monospace';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      ls.forEach((l, i) => ctx.fillText(l.trim(), tx+6, ty+6+i*15));
-    }
+      ctx.font = `${n === root ? 11 : 9}px DM Mono, monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const label = n.label.length > 20 ? n.label.slice(0,18)+'…' : n.label;
+      ctx.fillText(label, n.x, n.y + n.r + 12);
+    });
   }
 
   draw();
 
+  // Tooltip on hover
   canvas.onmousemove = (e) => {
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    let found = null;
-    nodes.forEach(n => { const dx = mx-n.x, dy = my-n.y; if (Math.sqrt(dx*dx+dy*dy) < n.r+4) found = n; });
-    if (found !== hoveredNode) { hoveredNode = found; draw(); }
-    canvas.style.cursor = found ? 'pointer' : 'default';
+    let hovered = null;
+    nodes.forEach(n => {
+      const dx = mx-n.x, dy = my-n.y;
+      if (Math.sqrt(dx*dx+dy*dy) < n.r) hovered = n;
+    });
+    canvas.style.cursor = hovered ? 'pointer' : 'default';
+    draw();
+    if (hovered) {
+      ctx.fillStyle = 'rgba(15,18,25,0.9)';
+      ctx.strokeStyle = hovered.color;
+      const tw = Math.min(200, hovered.label.length * 7 + 20);
+      ctx.beginPath();
+      ctx.roundRect(mx+10, my-20, tw, 36, 4);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#c8d0e8';
+      ctx.font = '10px DM Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(hovered.label, mx+18, my-2);
+    }
   };
-  canvas.onmouseleave = () => { hoveredNode = null; draw(); };
 }
 
-const GRAPH_NODE_COLORS = {
-  insight:          '#ffffff',
-  company_major:    '#4af4b0',
-  company_emerging: '#6e8cff',
-  cdmo:             '#40c4ff',
-  trend:            '#f4a24a',
-  risk:             '#f46a6a',
-  deal:             '#b388ff',
-  bottleneck:       '#ff8a65',
-  stage:            '#80cbc4',
-  // legacy keys kept for safety
-  Root:        '#ffffff',
+const NODE_COLORS = {
+  'Root':        '#ffffff',
   'Major Pharma':'#4af4b0',
-  Emerging:    '#6e8cff',
-  Transition:  '#f4a24a',
-  Risk:        '#f46a6a',
-  Deal:        '#b388ff',
-  Insight:     '#40c4ff',
+  'Emerging':    '#6e8cff',
+  'Transition':  '#f4a24a',
+  'Risk':        '#f46a6a',
+  'Deal':        '#b388ff',
+  'Insight':     '#40c4ff',
 };
 
-// Legacy buildNodes — used only if graph API returns nothing
 function buildNodes(m, d) {
   const nodes = [];
-  const push = (label, type, desc='') => label && nodes.push({ label, type, color: GRAPH_NODE_COLORS[type]||'#888', r: type==='insight'?28:(type==='company_major'?22:14), desc, x:0, y:0 });
-
-  push(d.modality_name || m.label, 'insight', (d.evolution_and_direction||{}).current_state||'');
+  // Root node
+  nodes.push({ label: d.modality_name || m.label, type:'Root', color:'#ffffff', r:28, x:0, y:0 });
 
   const evol = d.evolution_and_direction || {};
-  (evol.key_transitions || []).slice(0,6).forEach(t => push(t.transition||'', 'trend', t.detail||''));
+  const transitions = evol.key_transitions || [];
+  transitions.forEach(t => {
+    nodes.push({ label: t.transition || '', type:'Transition', color: NODE_COLORS['Transition'], r:14 });
+  });
 
-  const kp = d.key_players || {};
-  (kp.major || []).slice(0,6).forEach(e => push(typeof e==='string'?e:(e.company_name||''), 'company_major', typeof e==='object'?(e.reasoning||'').slice(0,120):''));
-  (kp.emerging || []).slice(0,6).forEach(e => push(typeof e==='string'?e:(e.company_name||''), 'company_emerging', ''));
+  const companies = d.companies_landscape || {};
+  (companies.major_pharma || []).forEach(c => {
+    nodes.push({ label: c.company || c, type:'Major Pharma', color: NODE_COLORS['Major Pharma'], r:18 });
+  });
+  (companies.emerging_biotech || []).forEach(c => {
+    nodes.push({ label: c.company || c, type:'Emerging', color: NODE_COLORS['Emerging'], r:14 });
+  });
 
-  const collab = d.collaborations_and_deals || {};
-  (collab.deals || []).slice(0,4).forEach(deal => push(`${deal.company_1||''}${deal.company_2?' × '+deal.company_2:''}`.trim()||'Deal', 'deal', deal.deal_description||''));
+  const risks = d.risks_and_challenges || [];
+  risks.forEach(r => {
+    nodes.push({ label: r.risk || r, type:'Risk', color: NODE_COLORS['Risk'], r:12 });
+  });
 
-  (d.risks||{}).key_risks && d.risks.key_risks.slice(0,4).forEach(r => push((typeof r==='string'?r:r.risk||'').slice(0,52), 'risk', ''));
+  const deals = d.key_deals || [];
+  deals.forEach(deal => {
+    nodes.push({ label: deal.deal_name || deal.companies || 'Deal', type:'Deal', color: NODE_COLORS['Deal'], r:13 });
+  });
+
+  const insights = d.key_insights || [];
+  insights.forEach(ins => {
+    nodes.push({ label: typeof ins === 'string' ? ins : ins.insight || '', type:'Insight', color: NODE_COLORS['Insight'], r:11 });
+  });
 
   return nodes.filter(n => n.label);
 }
